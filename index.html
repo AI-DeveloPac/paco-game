@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>🎮 Paco's Game</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fef6e4;
+  --bg-card:#fffcf2;
+  --ink:#001858;
+  --ink-soft:#5a6a8a;
+  --accent:#f582ae;
+  --accent-2:#8bd3dd;
+  --gold:#f5d491;
+  --green:#8fd694;
+  --red:#ff8e8e;
+  --shadow: 4px 4px 0 var(--ink);
+  --radius: 16px;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{margin:0; padding:0; background:var(--bg); color:var(--ink); font-family:'Plus Jakarta Sans',sans-serif; min-height:100vh;}
+body{padding-bottom:90px; padding-top:env(safe-area-inset-top); max-width:600px; margin:0 auto;}
+h1,h2,h3{font-family:'Fraunces',serif; font-weight:800; letter-spacing:-0.02em; margin:0;}
+button{font-family:inherit; cursor:pointer; border:none; background:none;}
+
+/* ===== Setup gate ===== */
+#setup{padding:32px 20px; display:none;}
+#setup.show{display:block;}
+#setup .card{background:var(--bg-card); border:2px solid var(--ink); border-radius:var(--radius); padding:24px; box-shadow:var(--shadow);}
+#setup input{width:100%; padding:14px; border:2px solid var(--ink); border-radius:10px; font-size:14px; font-family:monospace; margin:12px 0; background:#fff;}
+#setup button.primary{width:100%; padding:16px; background:var(--ink); color:var(--bg); border-radius:10px; font-weight:700; font-size:16px;}
+#setup .hint{font-size:13px; color:var(--ink-soft); line-height:1.5;}
+
+/* ===== Header ===== */
+header{padding:20px 20px 12px; display:flex; justify-content:space-between; align-items:flex-start;}
+header h1{font-size:28px;}
+header .sub{color:var(--ink-soft); font-size:14px; margin-top:4px;}
+header .week{background:var(--gold); border:2px solid var(--ink); padding:6px 12px; border-radius:20px; font-weight:700; font-size:13px; box-shadow:2px 2px 0 var(--ink);}
+
+/* ===== Energetico banner ===== */
+#energetico-banner{display:none; margin:12px 20px; padding:14px 16px; background:var(--accent-2); border:2px solid var(--ink); border-radius:var(--radius); box-shadow:var(--shadow); font-weight:600; animation:pulse 2s ease-in-out infinite;}
+#energetico-banner.show{display:block;}
+@keyframes pulse{0%,100%{transform:scale(1);} 50%{transform:scale(1.02);}}
+
+/* ===== Tab content ===== */
+main{padding:0 16px;}
+.tab-content{display:none;}
+.tab-content.active{display:block; animation:fadein .3s ease-out;}
+@keyframes fadein{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);}}
+
+/* ===== Dashboard ===== */
+.eje-card{background:var(--bg-card); border:2px solid var(--ink); border-radius:var(--radius); padding:16px; margin-bottom:12px; box-shadow:var(--shadow);}
+.eje-header{display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;}
+.eje-name{font-family:'Fraunces',serif; font-size:20px; font-weight:700; display:flex; align-items:center; gap:8px;}
+.eje-nivel{background:var(--ink); color:var(--bg); padding:4px 10px; border-radius:12px; font-size:12px; font-weight:700;}
+.bar-track{height:14px; background:#e8dec9; border:2px solid var(--ink); border-radius:8px; overflow:hidden; position:relative;}
+.bar-fill{height:100%; background:linear-gradient(90deg, var(--accent), var(--gold)); transition:width 0.6s cubic-bezier(.34,1.56,.64,1);}
+.eje-stats{display:flex; justify-content:space-between; font-size:12px; color:var(--ink-soft); margin-top:6px;}
+.eje-reto{color:var(--accent); font-weight:600;}
+
+/* ===== Habitos ===== */
+.habito-row{background:var(--bg-card); border:2px solid var(--ink); border-radius:var(--radius); padding:14px; margin-bottom:10px; box-shadow:var(--shadow); display:flex; justify-content:space-between; align-items:center;}
+.habito-info{flex:1;}
+.habito-name{font-weight:700; font-size:16px; display:flex; align-items:center; gap:8px;}
+.habito-desc{font-size:12px; color:var(--ink-soft); margin-top:2px;}
+.habito-buttons{display:flex; gap:6px;}
+.btn-toggle{padding:10px 14px; border:2px solid var(--ink); border-radius:10px; font-size:18px; background:#fff; transition:all .15s;}
+.btn-toggle.active-yes{background:var(--green); transform:scale(1.05);}
+.btn-toggle.active-no{background:var(--red); transform:scale(1.05);}
+.btn-toggle.active-na{background:var(--ink-soft); color:#fff;}
+.btn-toggle:active{transform:scale(0.95);}
+
+.field-block{background:var(--bg-card); border:2px solid var(--ink); border-radius:var(--radius); padding:14px; margin-bottom:10px; box-shadow:var(--shadow);}
+.field-block label{font-weight:700; font-size:14px; display:block; margin-bottom:6px;}
+.field-block input, .field-block textarea, .field-block select{width:100%; padding:10px; border:2px solid var(--ink); border-radius:10px; font-family:inherit; font-size:15px; background:#fff;}
+.field-block textarea{min-height:70px; resize:vertical;}
+
+.save-btn{width:100%; padding:16px; background:var(--accent); border:2px solid var(--ink); border-radius:var(--radius); font-weight:700; font-size:16px; box-shadow:var(--shadow); margin-top:12px;}
+.save-btn:active{transform:translate(2px,2px); box-shadow:2px 2px 0 var(--ink);}
+
+/* ===== Registrar acción ===== */
+.eje-pills{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;}
+.pill{padding:8px 14px; border:2px solid var(--ink); border-radius:20px; background:#fff; font-weight:600; font-size:13px;}
+.pill.active{background:var(--accent); transform:scale(1.05); box-shadow:2px 2px 0 var(--ink);}
+.accion-item{background:var(--bg-card); border:2px solid var(--ink); border-radius:12px; padding:12px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; box-shadow:2px 2px 0 var(--ink);}
+.accion-item:active{transform:translate(1px,1px); box-shadow:1px 1px 0 var(--ink);}
+.accion-item.selected{background:var(--gold);}
+.accion-name{font-weight:600; font-size:14px; flex:1;}
+.xp-badge{background:var(--ink); color:var(--bg); padding:4px 10px; border-radius:8px; font-weight:700; font-size:13px; margin-left:8px;}
+
+/* ===== Bitácora ===== */
+.summary-card{background:var(--bg-card); border:2px solid var(--ink); border-radius:var(--radius); padding:16px; margin-bottom:12px; box-shadow:var(--shadow);}
+.summary-card h3{font-size:18px; margin-bottom:10px;}
+.day-row{display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px dashed var(--ink-soft); font-size:13px;}
+.day-row:last-child{border-bottom:none;}
+.habito-mini{display:inline-block; width:18px; height:18px; border-radius:4px; margin-right:2px; vertical-align:middle;}
+.mini-yes{background:var(--green);}
+.mini-no{background:var(--red); opacity:.4;}
+.mini-na{background:var(--ink-soft); opacity:.3;}
+
+/* ===== Tab bar ===== */
+nav{position:fixed; bottom:0; left:0; right:0; background:var(--bg-card); border-top:3px solid var(--ink); display:flex; padding:8px 4px calc(8px + env(safe-area-inset-bottom)); max-width:600px; margin:0 auto;}
+nav button{flex:1; padding:8px 4px; display:flex; flex-direction:column; align-items:center; gap:3px; font-size:11px; font-weight:600; color:var(--ink-soft); border-radius:10px;}
+nav button.active{color:var(--ink); background:var(--gold);}
+nav button .icon{font-size:22px;}
+
+/* ===== Toast ===== */
+#toast{position:fixed; bottom:100px; left:50%; transform:translateX(-50%); background:var(--ink); color:var(--bg); padding:14px 22px; border-radius:30px; font-weight:600; opacity:0; transition:opacity .3s; pointer-events:none; z-index:1000; box-shadow:var(--shadow);}
+#toast.show{opacity:1;}
+
+/* ===== Loader ===== */
+#loader{position:fixed; inset:0; background:var(--bg); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:2000;}
+.spin{width:48px; height:48px; border:5px solid var(--ink); border-top-color:transparent; border-radius:50%; animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ===== Settings menu ===== */
+.settings-btn{background:var(--bg-card); border:2px solid var(--ink); border-radius:50%; width:36px; height:36px; font-size:16px;}
+.settings-row{display:flex; align-items:center; gap:6px;}
+</style>
+</head>
+<body>
+
+<div id="loader"><div class="spin"></div><p style="margin-top:14px; color:var(--ink-soft);">Cargando tu mundo...</p></div>
+
+<!-- ===================== SETUP ===================== -->
+<div id="setup">
+  <div class="card">
+    <h1 style="font-size:26px; margin-bottom:10px;">🎮 ¡Bienvenido, Paco!</h1>
+    <p class="hint" style="margin-bottom:18px;">Pega tu <strong>PAT de Airtable</strong> dedicado a Gamification. Queda guardado solo en este dispositivo (localStorage). Nunca viaja a ningún servidor que no sea Airtable.</p>
+    <input type="password" id="pat-input" placeholder="patXXXXXXXXXX..." autocomplete="off">
+    <button class="primary" onclick="savePAT()">🚀 Empezar</button>
+    <p class="hint" style="margin-top:14px;">🔒 Si compartes este iPhone/PC, no actives "guardar contraseña" en el navegador para esta página.</p>
+  </div>
+</div>
+
+<!-- ===================== APP ===================== -->
+<div id="app" style="display:none;">
+
+<header>
+  <div>
+    <h1>🎮 Paco's Game</h1>
+    <div class="sub" id="today-date">—</div>
+  </div>
+  <div class="settings-row">
+    <span class="week" id="week-counter">Día 1</span>
+    <button class="settings-btn" onclick="openSettings()">⚙️</button>
+  </div>
+</header>
+
+<div id="energetico-banner">🌟 Es hora del <strong>Trabajo Energético</strong> ✨</div>
+
+<main>
+
+<!-- ============ DASHBOARD ============ -->
+<section class="tab-content active" id="tab-dashboard">
+  <div id="ejes-container"></div>
+  <div style="text-align:center; color:var(--ink-soft); font-size:12px; margin-top:20px; padding:0 20px;">
+    💡 <em>1% diario acumulativo es suficiente</em>
+  </div>
+</section>
+
+<!-- ============ HÁBITOS ============ -->
+<section class="tab-content" id="tab-habitos">
+  <div style="text-align:center; margin:8px 0 16px;">
+    <h2 style="font-size:22px;">✨ Check-in del día</h2>
+    <div style="color:var(--ink-soft); font-size:13px; margin-top:4px;" id="habitos-date-display">—</div>
+  </div>
+
+  <div id="habitos-container"></div>
+
+  <div class="field-block">
+    <label>🛏️ Hora exacta dormido (anoche)</label>
+    <input type="text" id="hora-dormir" placeholder="ej: 10:15pm">
+  </div>
+
+  <div class="field-block">
+    <label>📝 Distracciones de hoy (autoreporte)</label>
+    <textarea id="distracciones" placeholder="¿Telegram? ¿series? ¿internet? Sin culpa, solo observa..."></textarea>
+  </div>
+
+  <button class="save-btn" onclick="saveHabitos()">💾 Guardar día</button>
+
+  <details style="margin-top:16px; background:var(--bg-card); border:2px dashed var(--ink); border-radius:var(--radius); padding:12px;">
+    <summary style="font-weight:600; cursor:pointer;">📅 ¿Registrar otro día?</summary>
+    <input type="date" id="habitos-fecha-manual" style="margin-top:10px; padding:10px; border:2px solid var(--ink); border-radius:10px; width:100%;">
+    <button style="margin-top:8px; padding:10px 16px; background:var(--accent-2); border:2px solid var(--ink); border-radius:10px; font-weight:600;" onclick="cambiarFechaHabitos()">📥 Cargar ese día</button>
+  </details>
+</section>
+
+<!-- ============ REGISTRAR XP ============ -->
+<section class="tab-content" id="tab-registrar">
+  <div style="text-align:center; margin:8px 0 16px;">
+    <h2 style="font-size:22px;">⚡ Sumar XP</h2>
+    <div style="color:var(--ink-soft); font-size:13px;">Elige eje y acción</div>
+  </div>
+
+  <div class="eje-pills" id="eje-pills"></div>
+  <div id="acciones-lista"></div>
+
+  <div class="field-block" style="margin-top:14px;">
+    <label>📝 Notas (opcional)</label>
+    <textarea id="accion-notas" placeholder="¿Qué hiciste exactamente?"></textarea>
+  </div>
+
+  <div class="field-block">
+    <label>📅 Fecha</label>
+    <input type="date" id="accion-fecha">
+  </div>
+
+  <button class="save-btn" onclick="registrarAccion()">🎯 ¡Sumar XP!</button>
+</section>
+
+<!-- ============ BITÁCORA ============ -->
+<section class="tab-content" id="tab-bitacora">
+  <div style="text-align:center; margin:8px 0 16px;">
+    <h2 style="font-size:22px;">📊 Progreso</h2>
+    <div style="color:var(--ink-soft); font-size:13px;" id="bitacora-rango">—</div>
+  </div>
+
+  <div class="summary-card">
+    <h3>🎯 XP esta semana por eje</h3>
+    <div id="xp-semana"></div>
+  </div>
+
+  <div class="summary-card">
+    <h3>🏆 Próximos hitos</h3>
+    <div id="proximos-hitos"></div>
+  </div>
+
+  <div class="summary-card">
+    <h3>📅 Últimos 7 días — hábitos</h3>
+    <div style="font-size:11px; color:var(--ink-soft); margin-bottom:8px;">D=Dormir · E=Ejercicio · M=Meditar · B=Baño · ⏰=Bloque120 · 🌟=T.Energético · 👨‍👦=Hijos</div>
+    <div id="bitacora-habitos"></div>
+  </div>
+
+  <div class="summary-card">
+    <h3>⚡ Últimas acciones XP</h3>
+    <div id="bitacora-acciones"></div>
+  </div>
+</section>
+
+</main>
+
+<nav>
+  <button class="active" onclick="showTab('dashboard',this)"><span class="icon">🏠</span>Inicio</button>
+  <button onclick="showTab('habitos',this)"><span class="icon">✨</span>Hábitos</button>
+  <button onclick="showTab('registrar',this)"><span class="icon">⚡</span>+ XP</button>
+  <button onclick="showTab('bitacora',this)"><span class="icon">📊</span>Progreso</button>
+</nav>
+
+<div id="toast"></div>
+
+</div>
+
+<script>
+/* ============================================================
+   CONFIG
+   ============================================================ */
+const BASE_ID = 'appBsEGD6rpWvAQfa';
+const TABLES = {
+  CATALOGO: 'Gam_Catalogo_Acciones',
+  ACCIONES: 'Gam_Acciones_XP',
+  HABITOS: 'Gam_Habitos_Diarios',
+  ESTADO: 'Gam_Ejes_Estado'
+};
+const NIVELES = [
+  {nivel:1, nombre:'Iniciado',     xp:0},
+  {nivel:2, nombre:'Aprendiz',     xp:100},
+  {nivel:3, nombre:'Practicante',  xp:300},
+  {nivel:4, nombre:'Especialista', xp:700},
+  {nivel:5, nombre:'Maestro',      xp:1500}
+];
+const EJES_INFO = {
+  'Mejorar':    {emoji:'🔧', color:'#f582ae'},
+  'Vincular':   {emoji:'🤝', color:'#8bd3dd'},
+  'Contribuir': {emoji:'🌱', color:'#8fd694'},
+  'Expresar':   {emoji:'🎨', color:'#f5d491'},
+  'Inspirar':   {emoji:'✨', color:'#c8b6ff'}
+};
+const HABITOS_CONFIG = [
+  {key:'Dormir_10pm',       emoji:'🛏️', name:'Dormir 10-10:20pm',     desc:'Anoche'},
+  {key:'Ejercicio',         emoji:'💪', name:'Ejercicio',              desc:'Mañana'},
+  {key:'Meditar',           emoji:'🧘', name:'Meditar',                desc:'Mañana'},
+  {key:'Bañarme',           emoji:'🚿', name:'Bañarme',                desc:'Mañana'},
+  {key:'Bloque_120min',     emoji:'⏰', name:'Bloque 120 min',         desc:'Deep work'},
+  {key:'Trabajo_Energetico',emoji:'🌟', name:'Trabajo Energético',     desc:'12:00pm'},
+  {key:'Tiempo_Hijos',      emoji:'👨‍👦', name:'Tiempo con hijos 30+ min', desc:'≥30 min/c', hasNA:true}
+];
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let PAT = localStorage.getItem('gam_pat') || '';
+let CATALOGO = [];          // [{id, accion, eje, xp}]
+let ACCIONES_LOG = [];      // últimas N acciones
+let HABITOS_HOY = {};       // {key: 'Sí'/'No'/'N/A'}
+let HABITOS_FECHA = todayISO();
+let HIJOS_APLICA = true;
+let ESTADO_EJES = {};       // {Mejorar: {xp, nivel, nombre, siguiente}, ...}
+let EJE_SELECCIONADO = 'Mejorar';
+let ACCION_SELECCIONADA = null;
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function todayISO(){
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+function fmtDateNice(iso){
+  const [y,m,d] = iso.split('-');
+  const date = new Date(+y, +m-1, +d);
+  return date.toLocaleDateString('es-MX',{weekday:'long', day:'numeric', month:'long'});
+}
+function calcularNivel(xp){
+  let actual = NIVELES[0];
+  let siguiente = null;
+  for(let i=0;i<NIVELES.length;i++){
+    if(xp >= NIVELES[i].xp){
+      actual = NIVELES[i];
+      siguiente = NIVELES[i+1] || null;
+    }
+  }
+  return {actual, siguiente};
+}
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2500);
+}
+function showLoader(show){
+  document.getElementById('loader').style.display = show?'flex':'none';
+}
+
+/* ============================================================
+   AIRTABLE API
+   ============================================================ */
+async function airtableFetch(table, params=''){
+  const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(table)}${params}`;
+  const res = await fetch(url, {
+    headers:{Authorization:`Bearer ${PAT}`}
+  });
+  if(!res.ok){
+    const err = await res.text();
+    throw new Error(`Airtable ${res.status}: ${err}`);
+  }
+  return res.json();
+}
+async function airtablePost(table, fields){
+  const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(table)}`;
+  const res = await fetch(url, {
+    method:'POST',
+    headers:{Authorization:`Bearer ${PAT}`, 'Content-Type':'application/json'},
+    body:JSON.stringify({fields})
+  });
+  if(!res.ok){ throw new Error(`POST falló: ${await res.text()}`); }
+  return res.json();
+}
+async function airtablePatch(table, recordId, fields){
+  const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(table)}/${recordId}`;
+  const res = await fetch(url, {
+    method:'PATCH',
+    headers:{Authorization:`Bearer ${PAT}`, 'Content-Type':'application/json'},
+    body:JSON.stringify({fields})
+  });
+  if(!res.ok){ throw new Error(`PATCH falló: ${await res.text()}`); }
+  return res.json();
+}
+
+/* ============================================================
+   SETUP / PAT
+   ============================================================ */
+function savePAT(){
+  const val = document.getElementById('pat-input').value.trim();
+  if(!val.startsWith('pat')){
+    alert('El PAT debe empezar con "pat". Verifica que sea el correcto.');
+    return;
+  }
+  localStorage.setItem('gam_pat', val);
+  PAT = val;
+  document.getElementById('setup').classList.remove('show');
+  init();
+}
+function openSettings(){
+  const opt = prompt('⚙️ Opciones:\n\n1 = Cerrar sesión (borrar PAT)\n2 = Re-sincronizar datos\n\nEscribe el número:');
+  if(opt==='1'){
+    if(confirm('¿Borrar PAT de este dispositivo? Tendrás que volver a pegarlo.')){
+      localStorage.removeItem('gam_pat');
+      location.reload();
+    }
+  } else if(opt==='2'){
+    init();
+  }
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+async function init(){
+  showLoader(true);
+  try{
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('today-date').textContent = fmtDateNice(todayISO());
+    document.getElementById('habitos-date-display').textContent = fmtDateNice(todayISO());
+    document.getElementById('habitos-fecha-manual').value = todayISO();
+    document.getElementById('accion-fecha').value = todayISO();
+
+    await cargarCatalogo();
+    await cargarEstadoEjes();
+    await cargarHabitosHoy();
+    await cargarAccionesLog();
+
+    renderDashboard();
+    renderHabitos();
+    renderRegistrar();
+    renderBitacora();
+
+    checkEnergeticoBanner();
+    setInterval(checkEnergeticoBanner, 60000);
+
+  } catch(e){
+    console.error(e);
+    alert('⚠️ Error conectando a Airtable.\n\n' + e.message + '\n\nVerifica:\n• PAT correcto y con permisos\n• Las 4 tablas existen con los nombres exactos\n• Los nombres de campos coinciden');
+    if(e.message.includes('401') || e.message.includes('403')){
+      localStorage.removeItem('gam_pat');
+      location.reload();
+    }
+  } finally {
+    showLoader(false);
+  }
+}
+
+async function cargarCatalogo(){
+  const data = await airtableFetch(TABLES.CATALOGO, '?filterByFormula={Activo}&pageSize=100');
+  CATALOGO = data.records.map(r=>({
+    id: r.id,
+    accion: r.fields.Accion,
+    eje: r.fields.Eje,
+    xp: r.fields.XP || 0
+  })).filter(a=>a.accion && a.eje);
+}
+
+async function cargarEstadoEjes(){
+  const data = await airtableFetch(TABLES.ESTADO, '?pageSize=10');
+  ESTADO_EJES = {};
+  Object.keys(EJES_INFO).forEach(eje=>{
+    ESTADO_EJES[eje] = {recordId:null, xp:0};
+  });
+  data.records.forEach(r=>{
+    const eje = r.fields.Eje;
+    if(ESTADO_EJES[eje]){
+      ESTADO_EJES[eje].recordId = r.id;
+      ESTADO_EJES[eje].xp = r.fields.XP_Total || 0;
+    }
+  });
+}
+
+async function cargarHabitosHoy(){
+  const data = await airtableFetch(TABLES.HABITOS, `?filterByFormula=${encodeURIComponent(`{Fecha}='${HABITOS_FECHA}'`)}&pageSize=1`);
+  HABITOS_HOY = {recordId:null};
+  HABITOS_CONFIG.forEach(h=> HABITOS_HOY[h.key] = null);
+  HABITOS_HOY.Hora_Dormir = '';
+  HABITOS_HOY.Distracciones_Reporte = '';
+  HIJOS_APLICA = true;
+  if(data.records.length){
+    const r = data.records[0];
+    HABITOS_HOY.recordId = r.id;
+    HABITOS_CONFIG.forEach(h=>{
+      const val = r.fields[h.key];
+      HABITOS_HOY[h.key] = val || null;
+    });
+    HABITOS_HOY.Hora_Dormir = r.fields.Hora_Dormir || '';
+    HABITOS_HOY.Distracciones_Reporte = r.fields.Distracciones_Reporte || '';
+    HIJOS_APLICA = r.fields.Hijos_Aplica !== false;
+  }
+}
+
+async function cargarAccionesLog(){
+  const data = await airtableFetch(TABLES.ACCIONES, '?sort%5B0%5D%5Bfield%5D=Fecha&sort%5B0%5D%5Bdirection%5D=desc&pageSize=50');
+  ACCIONES_LOG = data.records.map(r=>({
+    id: r.id,
+    fecha: r.fields.Fecha,
+    accion: r.fields.Accion_Nombre || '(acción)',
+    eje: r.fields.Eje,
+    xp: r.fields.XP_Ganado || 0,
+    notas: r.fields.Notas || ''
+  }));
+}
+
+/* ============================================================
+   RENDER — DASHBOARD
+   ============================================================ */
+function renderDashboard(){
+  const cont = document.getElementById('ejes-container');
+  cont.innerHTML = '';
+  Object.keys(EJES_INFO).forEach(eje=>{
+    const info = EJES_INFO[eje];
+    const xp = ESTADO_EJES[eje].xp;
+    const {actual, siguiente} = calcularNivel(xp);
+    const xpDesde = actual.xp;
+    const xpHasta = siguiente ? siguiente.xp : actual.xp;
+    const xpEnNivel = xp - xpDesde;
+    const xpRangoNivel = xpHasta - xpDesde || 1;
+    const pct = siguiente ? Math.min(100, (xpEnNivel / xpRangoNivel) * 100) : 100;
+    const xpFalta = siguiente ? siguiente.xp - xp : 0;
+    const isExpresar = eje === 'Expresar';
+    cont.innerHTML += `
+      <div class="eje-card">
+        <div class="eje-header">
+          <div class="eje-name">${info.emoji} ${eje}</div>
+          <div class="eje-nivel">Nv ${actual.nivel} · ${actual.nombre}</div>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+        <div class="eje-stats">
+          <span>${xp} XP total</span>
+          <span ${isExpresar?'class="eje-reto"':''}>
+            ${siguiente ? `↑ ${xpFalta} XP para ${siguiente.nombre}` : '🏆 ¡Maestro!'}
+            ${isExpresar?' · 🎯 tu reto':''}
+          </span>
+        </div>
+      </div>`;
+  });
+}
+
+/* ============================================================
+   RENDER — HÁBITOS
+   ============================================================ */
+function renderHabitos(){
+  const cont = document.getElementById('habitos-container');
+  cont.innerHTML = '';
+  HABITOS_CONFIG.forEach(h=>{
+    const val = HABITOS_HOY[h.key];
+    const isHijos = h.key === 'Tiempo_Hijos';
+    let buttons = `
+      <button class="btn-toggle ${val==='✅ Sí'?'active-yes':''}" onclick="setHabito('${h.key}','✅ Sí')">✅</button>
+      <button class="btn-toggle ${val==='❌ No'?'active-no':''}" onclick="setHabito('${h.key}','❌ No')">❌</button>`;
+    if(isHijos){
+      buttons += `<button class="btn-toggle ${val==='N/A'?'active-na':''}" onclick="setHabito('${h.key}','N/A')">N/A</button>`;
+    }
+    const hijosToggle = isHijos ? `
+      <div style="font-size:11px; color:var(--ink-soft); margin-top:4px;">
+        <label style="display:flex; align-items:center; gap:4px;">
+          <input type="checkbox" id="hijos-aplica" ${HIJOS_APLICA?'checked':''} onchange="toggleHijosAplica(this.checked)">
+          Hoy aplica
+        </label>
+      </div>` : '';
+    cont.innerHTML += `
+      <div class="habito-row">
+        <div class="habito-info">
+          <div class="habito-name">${h.emoji} ${h.name}</div>
+          <div class="habito-desc">${h.desc}</div>
+          ${hijosToggle}
+        </div>
+        <div class="habito-buttons">${buttons}</div>
+      </div>`;
+  });
+  document.getElementById('hora-dormir').value = HABITOS_HOY.Hora_Dormir || '';
+  document.getElementById('distracciones').value = HABITOS_HOY.Distracciones_Reporte || '';
+}
+
+function setHabito(key, val){
+  HABITOS_HOY[key] = val;
+  renderHabitos();
+}
+function toggleHijosAplica(checked){
+  HIJOS_APLICA = checked;
+  if(!checked) HABITOS_HOY.Tiempo_Hijos = 'N/A';
+  renderHabitos();
+}
+
+async function cambiarFechaHabitos(){
+  const nueva = document.getElementById('habitos-fecha-manual').value;
+  if(!nueva) return;
+  HABITOS_FECHA = nueva;
+  document.getElementById('habitos-date-display').textContent = fmtDateNice(nueva);
+  showLoader(true);
+  try{
+    await cargarHabitosHoy();
+    renderHabitos();
+    toast('📅 Cargado');
+  } catch(e){ alert(e.message); }
+  finally{ showLoader(false); }
+}
+
+async function saveHabitos(){
+  showLoader(true);
+  try{
+    const fields = {Fecha: HABITOS_FECHA, Hijos_Aplica: HIJOS_APLICA};
+    HABITOS_CONFIG.forEach(h=>{
+      if(HABITOS_HOY[h.key]) fields[h.key] = HABITOS_HOY[h.key];
+    });
+    const horaDormir = document.getElementById('hora-dormir').value.trim();
+    const distracciones = document.getElementById('distracciones').value.trim();
+    if(horaDormir) fields.Hora_Dormir = horaDormir;
+    if(distracciones) fields.Distracciones_Reporte = distracciones;
+
+    if(HABITOS_HOY.recordId){
+      await airtablePatch(TABLES.HABITOS, HABITOS_HOY.recordId, fields);
+    } else {
+      const r = await airtablePost(TABLES.HABITOS, fields);
+      HABITOS_HOY.recordId = r.id;
+    }
+    toast('💾 ¡Día guardado!');
+  } catch(e){
+    alert('Error al guardar: ' + e.message);
+  } finally {
+    showLoader(false);
+  }
+}
+
+/* ============================================================
+   RENDER — REGISTRAR XP
+   ============================================================ */
+function renderRegistrar(){
+  const pills = document.getElementById('eje-pills');
+  pills.innerHTML = '';
+  Object.keys(EJES_INFO).forEach(eje=>{
+    const info = EJES_INFO[eje];
+    pills.innerHTML += `<button class="pill ${eje===EJE_SELECCIONADO?'active':''}" onclick="selectEje('${eje}')">${info.emoji} ${eje}</button>`;
+  });
+  const lista = document.getElementById('acciones-lista');
+  const filtradas = CATALOGO.filter(a=>a.eje===EJE_SELECCIONADO);
+  if(filtradas.length === 0){
+    lista.innerHTML = '<p style="color:var(--ink-soft); text-align:center; padding:20px;">No hay acciones en este eje. ¿Olvidaste poblar el catálogo?</p>';
+    return;
+  }
+  lista.innerHTML = '';
+  filtradas.forEach(a=>{
+    lista.innerHTML += `
+      <div class="accion-item ${a.id===ACCION_SELECCIONADA?'selected':''}" onclick="selectAccion('${a.id}')">
+        <div class="accion-name">${a.accion}</div>
+        <div class="xp-badge">+${a.xp} XP</div>
+      </div>`;
+  });
+}
+function selectEje(eje){
+  EJE_SELECCIONADO = eje;
+  ACCION_SELECCIONADA = null;
+  renderRegistrar();
+}
+function selectAccion(id){
+  ACCION_SELECCIONADA = id;
+  renderRegistrar();
+}
+
+async function registrarAccion(){
+  if(!ACCION_SELECCIONADA){
+    toast('⚠️ Elige una acción primero');
+    return;
+  }
+  const accion = CATALOGO.find(a=>a.id===ACCION_SELECCIONADA);
+  const notas = document.getElementById('accion-notas').value.trim();
+  const fecha = document.getElementById('accion-fecha').value || todayISO();
+  showLoader(true);
+  try{
+    await airtablePost(TABLES.ACCIONES, {
+      Resumen: `[${accion.eje}] +${accion.xp} XP — ${accion.accion}`,
+      Fecha: fecha,
+      Accion_Nombre: accion.accion,
+      Eje: accion.eje,
+      XP_Ganado: accion.xp,
+      ...(notas && {Notas: notas})
+    });
+    const nuevoXP = ESTADO_EJES[accion.eje].xp + accion.xp;
+    const {actual: nivelAntes} = calcularNivel(ESTADO_EJES[accion.eje].xp);
+    const {actual: nivelDespues, siguiente} = calcularNivel(nuevoXP);
+    await airtablePatch(TABLES.ESTADO, ESTADO_EJES[accion.eje].recordId, {
+      XP_Total: nuevoXP,
+      Nivel_Actual: nivelDespues.nivel,
+      Nombre_Nivel: nivelDespues.nombre,
+      XP_Siguiente_Nivel: siguiente ? siguiente.xp - nuevoXP : 0
+    });
+    ESTADO_EJES[accion.eje].xp = nuevoXP;
+    if(nivelDespues.nivel > nivelAntes.nivel){
+      setTimeout(()=>alert(`🎉 ¡LEVEL UP!\n\n${EJES_INFO[accion.eje].emoji} ${accion.eje}\nNivel ${nivelDespues.nivel} — ${nivelDespues.nombre}\n\n¡Sigue así, Paco!`), 100);
+    } else {
+      toast(`⚡ +${accion.xp} XP en ${accion.eje}`);
+    }
+    document.getElementById('accion-notas').value = '';
+    ACCION_SELECCIONADA = null;
+    await cargarAccionesLog();
+    renderDashboard();
+    renderRegistrar();
+    renderBitacora();
+  } catch(e){
+    alert('Error: ' + e.message);
+  } finally {
+    showLoader(false);
+  }
+}
+
+/* ============================================================
+   RENDER — BITÁCORA
+   ============================================================ */
+function renderBitacora(){
+  const hoy = new Date();
+  const hace7 = new Date(hoy); hace7.setDate(hoy.getDate()-6);
+  document.getElementById('bitacora-rango').textContent =
+    `${hace7.toLocaleDateString('es-MX',{day:'numeric',month:'short'})} — ${hoy.toLocaleDateString('es-MX',{day:'numeric',month:'short'})}`;
+
+  // XP semana por eje
+  const desdeISO = hace7.toISOString().split('T')[0];
+  const xpSemana = {Mejorar:0, Vincular:0, Contribuir:0, Expresar:0, Inspirar:0};
+  ACCIONES_LOG.forEach(a=>{
+    if(a.fecha >= desdeISO && xpSemana[a.eje]!==undefined){
+      xpSemana[a.eje] += (a.xp || 0);
+    }
+  });
+  const totalSemana = Object.values(xpSemana).reduce((a,b)=>a+b,0);
+  let xpHTML = '';
+  Object.keys(xpSemana).forEach(eje=>{
+    const info = EJES_INFO[eje];
+    const xp = xpSemana[eje];
+    const pct = totalSemana > 0 ? (xp/totalSemana)*100 : 0;
+    xpHTML += `
+      <div style="margin-bottom:8px;">
+        <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:3px;">
+          <span>${info.emoji} ${eje}</span>
+          <strong>+${xp} XP</strong>
+        </div>
+        <div class="bar-track" style="height:8px;"><div class="bar-fill" style="width:${pct}%"></div></div>
+      </div>`;
+  });
+  xpHTML += `<div style="text-align:right; margin-top:10px; font-weight:700;">Total: ${totalSemana} XP</div>`;
+  document.getElementById('xp-semana').innerHTML = xpHTML;
+
+  // Próximos hitos
+  let hitosHTML = '';
+  Object.keys(EJES_INFO).forEach(eje=>{
+    const xp = ESTADO_EJES[eje].xp;
+    const {actual, siguiente} = calcularNivel(xp);
+    const info = EJES_INFO[eje];
+    if(siguiente){
+      const falta = siguiente.xp - xp;
+      hitosHTML += `<div class="day-row"><span>${info.emoji} ${eje}</span><span><strong>${falta} XP</strong> → ${siguiente.nombre}</span></div>`;
+    } else {
+      hitosHTML += `<div class="day-row"><span>${info.emoji} ${eje}</span><span>🏆 ¡Máximo!</span></div>`;
+    }
+  });
+  document.getElementById('proximos-hitos').innerHTML = hitosHTML;
+
+  // Últimos 7 días de hábitos — fetch async
+  cargarHabitosSemana();
+
+  // Últimas acciones
+  const ult = ACCIONES_LOG.slice(0,10);
+  if(ult.length===0){
+    document.getElementById('bitacora-acciones').innerHTML = '<p style="color:var(--ink-soft); font-size:13px; text-align:center; padding:10px;">Aún no hay acciones registradas. ¡Empieza hoy!</p>';
+  } else {
+    document.getElementById('bitacora-acciones').innerHTML = ult.map(a=>{
+      const accionTxt = a.accion || '(acción)';
+      const info = a.eje ? EJES_INFO[a.eje] : null;
+      const emoji = info?.emoji || '•';
+      const fechaCorta = a.fecha ? a.fecha.slice(5).replace('-','/') : '';
+      return `<div class="day-row"><span>${emoji} ${accionTxt}</span><span style="text-align:right; font-size:11px;"><strong>+${a.xp}</strong><br>${fechaCorta}</span></div>`;
+    }).join('');
+  }
+}
+
+async function cargarHabitosSemana(){
+  try{
+    const hoy = new Date();
+    const hace7 = new Date(hoy); hace7.setDate(hoy.getDate()-6);
+    const desdeISO = hace7.toISOString().split('T')[0];
+    const data = await airtableFetch(TABLES.HABITOS, `?filterByFormula=${encodeURIComponent(`IS_AFTER({Fecha}, '${hace7.toISOString().split('T')[0]}')`)}&pageSize=14`);
+    const porFecha = {};
+    data.records.forEach(r=>{ if(r.fields.Fecha) porFecha[r.fields.Fecha] = r.fields; });
+    let html = '';
+    for(let i=6; i>=0; i--){
+      const d = new Date(hoy); d.setDate(hoy.getDate()-i);
+      const iso = d.toISOString().split('T')[0];
+      const f = porFecha[iso];
+      const dia = d.toLocaleDateString('es-MX',{weekday:'short', day:'numeric'});
+      let minis = '';
+      HABITOS_CONFIG.forEach(h=>{
+        const val = f?.[h.key];
+        let cls = 'mini-no';
+        if(val==='✅ Sí') cls='mini-yes';
+        else if(val==='N/A') cls='mini-na';
+        minis += `<span class="habito-mini ${cls}" title="${h.name}"></span>`;
+      });
+      html += `<div class="day-row"><span>${dia}</span><span>${minis}</span></div>`;
+    }
+    document.getElementById('bitacora-habitos').innerHTML = html;
+  } catch(e){
+    console.error(e);
+  }
+}
+
+/* ============================================================
+   TABS
+   ============================================================ */
+function showTab(name, btn){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(name==='bitacora') renderBitacora();
+  if(name==='dashboard') renderDashboard();
+}
+
+/* ============================================================
+   ENERGÉTICO BANNER (12:00–12:30)
+   ============================================================ */
+function checkEnergeticoBanner(){
+  const now = new Date();
+  const h = now.getHours();
+  const m = now.getMinutes();
+  const inWindow = h===12 && m < 30;
+  document.getElementById('energetico-banner').classList.toggle('show', inWindow);
+}
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+window.addEventListener('DOMContentLoaded', ()=>{
+  if(!PAT){
+    showLoader(false);
+    document.getElementById('setup').classList.add('show');
+  } else {
+    init();
+  }
+});
+</script>
+</body>
+</html>
