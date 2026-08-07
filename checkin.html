@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>🎙️ Check-in de Voz</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fef6e4;
+  --bg-card:#fffcf2;
+  --ink:#001858;
+  --ink-soft:#5a6a8a;
+  --accent:#f582ae;
+  --gold:#f5d491;
+  --shadow: 4px 4px 0 var(--ink);
+  --radius: 16px;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{margin:0; padding:0; background:var(--bg); color:var(--ink); font-family:'Plus Jakarta Sans',sans-serif; min-height:100vh;}
+body{padding:env(safe-area-inset-top) 0 40px; max-width:600px; margin:0 auto;}
+h1,h2{font-family:'Fraunces',serif; font-weight:800; letter-spacing:-0.02em; margin:0;}
+button{font-family:inherit; cursor:pointer; border:none; background:none;}
+
+#setup{padding:32px 20px; display:none;}
+#setup.show{display:block;}
+#setup .card{background:var(--bg-card); border:2px solid var(--ink); border-radius:var(--radius); padding:24px; box-shadow:var(--shadow);}
+#setup input{width:100%; padding:14px; border:2px solid var(--ink); border-radius:10px; font-size:14px; font-family:monospace; margin:12px 0; background:#fff;}
+#setup button.primary{width:100%; padding:16px; background:var(--ink); color:var(--bg); border-radius:10px; font-weight:700; font-size:16px;}
+#setup .hint{font-size:13px; color:var(--ink-soft); line-height:1.5;}
+
+header{padding:24px 20px 12px; text-align:center;}
+header h1{font-size:26px;}
+header .sub{color:var(--ink-soft); font-size:14px; margin-top:4px;}
+
+main{padding:0 20px;}
+
+.script-card{background:var(--gold); border:2px solid var(--ink); border-radius:var(--radius); padding:16px; margin-bottom:16px; box-shadow:var(--shadow); font-size:14px; line-height:1.5;}
+.script-card .label{font-weight:700; font-size:12px; text-transform:uppercase; letter-spacing:0.03em; margin-bottom:6px; display:block;}
+
+.bloque-pills{display:flex; gap:8px; margin-bottom:16px;}
+.bloque-pill{flex:1; padding:12px; border:2px solid var(--ink); border-radius:12px; background:#fff; font-weight:700; text-align:center;}
+.bloque-pill.active{background:var(--accent); box-shadow:2px 2px 0 var(--ink); transform:translate(-1px,-1px);}
+
+#texto-checkin{width:100%; min-height:160px; padding:14px; border:2px solid var(--ink); border-radius:var(--radius); font-family:inherit; font-size:16px; background:var(--bg-card); resize:vertical;}
+#texto-checkin::placeholder{color:var(--ink-soft);}
+
+.mic-hint{font-size:12px; color:var(--ink-soft); margin-top:8px; text-align:center;}
+
+.save-btn{width:100%; padding:16px; background:var(--accent); border:2px solid var(--ink); border-radius:var(--radius); font-weight:700; font-size:16px; box-shadow:var(--shadow); margin-top:16px;}
+.save-btn:active{transform:translate(2px,2px); box-shadow:2px 2px 0 var(--ink);}
+
+.settings-link{display:block; text-align:center; margin-top:24px; color:var(--ink-soft); font-size:12px;}
+
+#toast{position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:var(--ink); color:var(--bg); padding:14px 22px; border-radius:30px; font-weight:600; opacity:0; transition:opacity .3s; pointer-events:none; z-index:1000; box-shadow:var(--shadow); max-width:80vw; text-align:center;}
+#toast.show{opacity:1;}
+
+#loader{position:fixed; inset:0; background:var(--bg); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:2000;}
+.spin{width:48px; height:48px; border:5px solid var(--ink); border-top-color:transparent; border-radius:50%; animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+
+<div id="loader" style="display:none;"><div class="spin"></div><p style="margin-top:14px; color:var(--ink-soft);">Guardando...</p></div>
+
+<div id="setup">
+  <div class="card">
+    <h1 style="font-size:24px; margin-bottom:10px;">🎙️ Check-in de Voz</h1>
+    <p class="hint" style="margin-bottom:18px;">Pega tu <strong>PAT de Airtable</strong> dedicado a la base Personal. Queda guardado solo en este dispositivo (localStorage). Nunca viaja a ningún servidor que no sea Airtable.</p>
+    <input type="password" id="pat-input" placeholder="patXXXXXXXXXX..." autocomplete="off">
+    <button class="primary" onclick="savePAT()">🚀 Empezar</button>
+    <p class="hint" style="margin-top:14px;">🔒 Si compartes este iPhone/PC, no actives "guardar contraseña" en el navegador para esta página.</p>
+  </div>
+</div>
+
+<div id="app" style="display:none;">
+  <header>
+    <h1>🎙️ Check-in de Voz</h1>
+    <div class="sub" id="fecha-hoy">—</div>
+  </header>
+
+  <main>
+    <div class="script-card">
+      <span class="label">Script guía — lee y luego dicta</span>
+      Del 1 al 5: ¿cómo está tu energía, tu foco y tu creatividad? ¿Dormiste bien? ¿hiciste ejercicio? ¿comiste pesado? ¿cumpliste tus hábitos hoy? Cuenta cualquier cosa notable de este bloque.
+    </div>
+
+    <div class="bloque-pills">
+      <button class="bloque-pill" id="pill-mediodia" onclick="selectBloque('Mediodía')">☀️ Mediodía</button>
+      <button class="bloque-pill" id="pill-noche" onclick="selectBloque('Noche')">🌙 Noche</button>
+    </div>
+
+    <textarea id="texto-checkin" placeholder="🎤 Toca el micrófono del teclado y habla — di todo junto, siguiendo el script de arriba."></textarea>
+    <div class="mic-hint">Usa el ícono de micrófono del teclado de iOS para dictar.</div>
+
+    <button class="save-btn" onclick="guardarCheckin()">💾 Guardar check-in</button>
+
+    <a class="settings-link" href="#" onclick="openSettings(); return false;">⚙️ Opciones</a>
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const BASE_ID = 'appKJCQWXan27Wfwy';
+const TABLE = 'Checkin-Voz';
+
+let PAT = localStorage.getItem('checkin_pat') || '';
+let BLOQUE_SELECCIONADO = sugerirBloque();
+
+function sugerirBloque(){
+  return new Date().getHours() < 16 ? 'Mediodía' : 'Noche';
+}
+
+function fmtFechaHoy(){
+  return new Date().toLocaleDateString('es-MX', {weekday:'long', day:'numeric', month:'long'});
+}
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2500);
+}
+function showLoader(show){
+  document.getElementById('loader').style.display = show ? 'flex' : 'none';
+}
+
+async function airtablePost(table, fields){
+  const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(table)}`;
+  const res = await fetch(url, {
+    method:'POST',
+    headers:{Authorization:`Bearer ${PAT}`, 'Content-Type':'application/json'},
+    body:JSON.stringify({fields})
+  });
+  if(!res.ok){ throw new Error(`POST falló: ${await res.text()}`); }
+  return res.json();
+}
+
+function savePAT(){
+  const val = document.getElementById('pat-input').value.trim();
+  if(!val.startsWith('pat')){
+    alert('El PAT debe empezar con "pat". Verifica que sea el correcto.');
+    return;
+  }
+  localStorage.setItem('checkin_pat', val);
+  PAT = val;
+  document.getElementById('setup').classList.remove('show');
+  init();
+}
+
+function openSettings(){
+  const opt = prompt('⚙️ Opciones:\n\n1 = Cerrar sesión (borrar PAT)\n\nEscribe el número:');
+  if(opt==='1'){
+    if(confirm('¿Borrar PAT de este dispositivo? Tendrás que volver a pegarlo.')){
+      localStorage.removeItem('checkin_pat');
+      location.reload();
+    }
+  }
+}
+
+function selectBloque(bloque){
+  BLOQUE_SELECCIONADO = bloque;
+  renderBloque();
+}
+function renderBloque(){
+  document.getElementById('pill-mediodia').classList.toggle('active', BLOQUE_SELECCIONADO === 'Mediodía');
+  document.getElementById('pill-noche').classList.toggle('active', BLOQUE_SELECCIONADO === 'Noche');
+}
+
+async function guardarCheckin(){
+  const texto = document.getElementById('texto-checkin').value.trim();
+  if(!texto){
+    toast('⚠️ Escribe o dicta algo primero');
+    return;
+  }
+  showLoader(true);
+  try{
+    await airtablePost(TABLE, {
+      Fecha_Hora: new Date().toISOString(),
+      Bloque: BLOQUE_SELECCIONADO,
+      Texto_Crudo: texto,
+      Estructurado: false
+    });
+    document.getElementById('texto-checkin').value = '';
+    toast('💾 ¡Check-in guardado!');
+  } catch(e){
+    alert('Error al guardar: ' + e.message + '\n\nTu texto no se perdió, sigue en el cuadro. Intenta de nuevo.');
+  } finally {
+    showLoader(false);
+  }
+}
+
+function init(){
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('fecha-hoy').textContent = fmtFechaHoy();
+  renderBloque();
+}
+
+window.addEventListener('DOMContentLoaded', ()=>{
+  if(!PAT){
+    document.getElementById('setup').classList.add('show');
+  } else {
+    init();
+  }
+});
+</script>
+</body>
+</html>
